@@ -89,6 +89,17 @@ type EnhancedPmdMetrics struct {
 	// Suspicious iterations
 	SuspiciousIterations uint64
 	SuspiciousPercent    float64
+	
+	// Flow Cache Performance Metrics
+	EMCHitRate           float64
+	EMCHits              uint64
+	EMCInserts           uint64
+	SMCHitRate           float64
+	SMCHits              uint64
+	MegaflowHitRate      float64
+	MegaflowHits         uint64
+	MegaflowMisses       uint64
+	FlowCacheLookups     uint64
 }
 
 // GetEnhancedPmdMetrics retrieves comprehensive PMD metrics
@@ -165,6 +176,17 @@ func parseEnhancedPmdOutput(output string) []EnhancedPmdMetrics {
 	
 	// Suspicious iterations
 	suspiciousRe := regexp.MustCompile(`suspicious iterations:\s+(\d+)\s+\(([\d.]+)%\)`)
+	
+	// Flow Cache patterns
+	emcHitRateRe := regexp.MustCompile(`emc hit rate:\s+([\d.]+)%`)
+	emcHitsRe := regexp.MustCompile(`emc hits:\s+(\d+)`)
+	emcInsertsRe := regexp.MustCompile(`emc inserts:\s+(\d+)`)
+	smcHitRateRe := regexp.MustCompile(`smc hit rate:\s+([\d.]+)%`)
+	smcHitsRe := regexp.MustCompile(`smc hits:\s+(\d+)`)
+	megaflowHitRateRe := regexp.MustCompile(`megaflow hit rate:\s+([\d.]+)%`)
+	megaflowHitsRe := regexp.MustCompile(`megaflow hits:\s+(\d+)`)
+	megaflowMissesRe := regexp.MustCompile(`megaflow misses:\s+(\d+)`)
+	flowLookupsRe := regexp.MustCompile(`(?:total )?flow lookups:\s+(\d+)`)
 	
 	// Histogram patterns
 	histogramRe := regexp.MustCompile(`(\w+) histogram:`)
@@ -391,6 +413,53 @@ func parseEnhancedPmdOutput(output string) []EnhancedPmdMetrics {
 			}
 			if val, err := strconv.ParseFloat(matches[2], 64); err == nil {
 				currentMetric.SuspiciousPercent = val
+			}
+		}
+		
+		// Parse flow cache metrics
+		if matches := emcHitRateRe.FindStringSubmatch(line); matches != nil {
+			if val, err := strconv.ParseFloat(matches[1], 64); err == nil {
+				currentMetric.EMCHitRate = val
+			}
+		}
+		if matches := emcHitsRe.FindStringSubmatch(line); matches != nil {
+			if val, err := strconv.ParseUint(matches[1], 10, 64); err == nil {
+				currentMetric.EMCHits = val
+			}
+		}
+		if matches := emcInsertsRe.FindStringSubmatch(line); matches != nil {
+			if val, err := strconv.ParseUint(matches[1], 10, 64); err == nil {
+				currentMetric.EMCInserts = val
+			}
+		}
+		if matches := smcHitRateRe.FindStringSubmatch(line); matches != nil {
+			if val, err := strconv.ParseFloat(matches[1], 64); err == nil {
+				currentMetric.SMCHitRate = val
+			}
+		}
+		if matches := smcHitsRe.FindStringSubmatch(line); matches != nil {
+			if val, err := strconv.ParseUint(matches[1], 10, 64); err == nil {
+				currentMetric.SMCHits = val
+			}
+		}
+		if matches := megaflowHitRateRe.FindStringSubmatch(line); matches != nil {
+			if val, err := strconv.ParseFloat(matches[1], 64); err == nil {
+				currentMetric.MegaflowHitRate = val
+			}
+		}
+		if matches := megaflowHitsRe.FindStringSubmatch(line); matches != nil {
+			if val, err := strconv.ParseUint(matches[1], 10, 64); err == nil {
+				currentMetric.MegaflowHits = val
+			}
+		}
+		if matches := megaflowMissesRe.FindStringSubmatch(line); matches != nil {
+			if val, err := strconv.ParseUint(matches[1], 10, 64); err == nil {
+				currentMetric.MegaflowMisses = val
+			}
+		}
+		if matches := flowLookupsRe.FindStringSubmatch(line); matches != nil {
+			if val, err := strconv.ParseUint(matches[1], 10, 64); err == nil {
+				currentMetric.FlowCacheLookups = val
 			}
 		}
 		

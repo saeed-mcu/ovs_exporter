@@ -483,6 +483,52 @@ var (
 		"Specific datapath packet drop counters.",
 		[]string{"system_id", "drop_reason"}, nil,
 	)
+	// Flow Cache Performance Metrics
+	emcHitRate = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "flow_cache_emc_hit_rate"),
+		"Exact Match Cache (EMC) hit rate percentage.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	emcHits = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "flow_cache_emc_hits_total"),
+		"Total Exact Match Cache (EMC) hits.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	emcInserts = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "flow_cache_emc_inserts_total"),
+		"Total EMC insertions.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	smcHitRate = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "flow_cache_smc_hit_rate"),
+		"Signature Match Cache (SMC) hit rate percentage.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	smcHits = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "flow_cache_smc_hits_total"),
+		"Total Signature Match Cache (SMC) hits.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	megaflowHitRate = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "flow_cache_megaflow_hit_rate"),
+		"Megaflow cache hit rate percentage.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	megaflowHits = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "flow_cache_megaflow_hits_total"),
+		"Total Megaflow cache hits.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	megaflowMisses = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "flow_cache_megaflow_misses_total"),
+		"Total Megaflow cache misses.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	flowCacheLookups = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "flow_cache_lookups_total"),
+		"Total flow cache lookups.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
 )
 
 // Exporter collects OVN data from the given server and exports them using
@@ -626,6 +672,49 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- interfaceOptionsKeyValuePair
 	ch <- interfaceExternalIdKeyValuePair
 	ch <- interfaceStateMulticastPackets
+	// PMD Performance Metrics
+	ch <- pmdCyclesPerIteration
+	ch <- pmdPacketsPerIteration
+	ch <- pmdCyclesPerPacket
+	ch <- pmdPacketsPerBatch
+	ch <- pmdMaxVhostQueueLength
+	ch <- pmdUpcalls
+	ch <- pmdUpcallCycles
+	ch <- vhostTxRetries
+	ch <- vhostTxContention
+	ch <- vhostTxIrqs
+	ch <- pmdIterations
+	ch <- pmdBusyCycles
+	// Enhanced PMD Metrics
+	ch <- pmdCPUUtilization
+	ch <- pmdIdleCycles
+	ch <- pmdSleepIterations
+	ch <- pmdRxBatches
+	ch <- pmdRxPackets
+	ch <- pmdAvgRxBatchSize
+	ch <- pmdMaxRxBatchSize
+	ch <- pmdTxBatches
+	ch <- pmdTxPackets
+	ch <- pmdAvgTxBatchSize
+	ch <- pmdAvgVhostQueueLength
+	ch <- pmdVhostQueueFull
+	ch <- pmdExactMatchHit
+	ch <- pmdMaskedHit
+	ch <- pmdMiss
+	ch <- pmdLost
+	ch <- pmdSuspiciousIterations
+	ch <- pmdSuspiciousPercent
+	ch <- datapathDrops
+	// Flow Cache Performance Metrics
+	ch <- emcHitRate
+	ch <- emcHits
+	ch <- emcInserts
+	ch <- smcHitRate
+	ch <- smcHits
+	ch <- megaflowHitRate
+	ch <- megaflowHits
+	ch <- megaflowMisses
+	ch <- flowCacheLookups
 }
 
 // IncrementErrorCounter increases the counter of failed queries

@@ -58,6 +58,20 @@ The exporter automatically collects comprehensive PMD performance metrics when r
 | `ovs_pmd_upcalls_total` | Total number of upcalls from PMD | `system_id`, `pmd_id`, `numa_id` |
 | `ovs_pmd_upcall_cycles_total` | Total cycles spent in upcalls | `system_id`, `pmd_id`, `numa_id` |
 
+### Flow Cache Performance Metrics
+
+| Metric | Description | Labels |
+|--------|-------------|--------|
+| `ovs_flow_cache_emc_hit_rate` | Exact Match Cache (EMC) hit rate percentage | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_flow_cache_emc_hits_total` | Total Exact Match Cache (EMC) hits | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_flow_cache_emc_inserts_total` | Total EMC insertions | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_flow_cache_smc_hit_rate` | Signature Match Cache (SMC) hit rate percentage | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_flow_cache_smc_hits_total` | Total Signature Match Cache (SMC) hits | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_flow_cache_megaflow_hit_rate` | Megaflow cache hit rate percentage | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_flow_cache_megaflow_hits_total` | Total Megaflow cache hits | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_flow_cache_megaflow_misses_total` | Total Megaflow cache misses | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_flow_cache_lookups_total` | Total flow cache lookups | `system_id`, `pmd_id`, `numa_id` |
+
 ### vHost Specific Counters
 
 | Metric | Description | Labels |
@@ -132,6 +146,18 @@ increase(ovs_coverage_total{event=~".*drop.*"}[5m])
 
 # Specific drop reasons
 ovs_coverage_total{event="datapath_drop_upcall_error"}
+```
+
+### Monitor Flow Cache Performance
+```promql
+# EMC hit rate by PMD thread
+ovs_flow_cache_emc_hit_rate{job="ovs-exporter"}
+
+# Cache miss rate (indicates potential performance issues)
+100 - ovs_flow_cache_megaflow_hit_rate{job="ovs-exporter"}
+
+# Total cache lookups rate
+rate(ovs_flow_cache_lookups_total[5m])
 ```
 
 ## Data Collection

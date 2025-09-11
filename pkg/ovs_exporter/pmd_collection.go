@@ -270,6 +270,78 @@ func (e *Exporter) CollectPMDMetrics() {
 				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
 			))
 		}
+		
+		// Flow Cache Metrics
+		if pmd.EMCHitRate > 0 || pmd.EMCHits > 0 {
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				emcHitRate,
+				prometheus.GaugeValue,
+				pmd.EMCHitRate,
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+			
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				emcHits,
+				prometheus.CounterValue,
+				float64(pmd.EMCHits),
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+			
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				emcInserts,
+				prometheus.CounterValue,
+				float64(pmd.EMCInserts),
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+		}
+		
+		if pmd.SMCHitRate > 0 || pmd.SMCHits > 0 {
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				smcHitRate,
+				prometheus.GaugeValue,
+				pmd.SMCHitRate,
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+			
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				smcHits,
+				prometheus.CounterValue,
+				float64(pmd.SMCHits),
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+		}
+		
+		if pmd.MegaflowHitRate > 0 || pmd.MegaflowHits > 0 || pmd.MegaflowMisses > 0 {
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				megaflowHitRate,
+				prometheus.GaugeValue,
+				pmd.MegaflowHitRate,
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+			
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				megaflowHits,
+				prometheus.CounterValue,
+				float64(pmd.MegaflowHits),
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+			
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				megaflowMisses,
+				prometheus.CounterValue,
+				float64(pmd.MegaflowMisses),
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+		}
+		
+		if pmd.FlowCacheLookups > 0 {
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				flowCacheLookups,
+				prometheus.CounterValue,
+				float64(pmd.FlowCacheLookups),
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+		}
 	}
 	
 	level.Debug(e.logger).Log(
