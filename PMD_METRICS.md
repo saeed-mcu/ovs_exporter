@@ -4,19 +4,52 @@ This exporter now supports comprehensive PMD (Poll Mode Driver) performance metr
 
 ## Supported PMD Metrics
 
-The exporter automatically collects PMD performance metrics when running on DPDK-enabled OVS deployments. These metrics are critical for understanding and optimizing high-performance packet processing.
+The exporter automatically collects comprehensive PMD performance metrics when running on DPDK-enabled OVS deployments. These metrics are critical for understanding and optimizing high-performance packet processing.
 
 ### Core PMD Performance Metrics
 
 | Metric | Description | Labels |
 |--------|-------------|--------|
+| `ovs_pmd_cpu_utilization_percent` | CPU utilization percentage of PMD thread | `system_id`, `pmd_id`, `numa_id`, `core_id` |
 | `ovs_pmd_cycles_per_iteration` | Average cycles spent per PMD iteration | `system_id`, `pmd_id`, `numa_id` |
 | `ovs_pmd_packets_per_iteration` | Average packets processed per PMD iteration | `system_id`, `pmd_id`, `numa_id` |
 | `ovs_pmd_cycles_per_packet` | Average cycles spent per packet in PMD | `system_id`, `pmd_id`, `numa_id` |
 | `ovs_pmd_packets_per_batch` | Average packets per batch in PMD | `system_id`, `pmd_id`, `numa_id` |
 | `ovs_pmd_max_vhost_queue_length` | Maximum vhost queue length observed | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_pmd_avg_vhost_queue_length` | Average vhost queue length | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_pmd_vhost_queue_full_total` | Number of times vhost queue was full | `system_id`, `pmd_id`, `numa_id` |
 | `ovs_pmd_iterations_total` | Total number of PMD iterations | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_pmd_sleep_iterations_total` | Total sleep iterations for PMD thread | `system_id`, `pmd_id`, `numa_id` |
 | `ovs_pmd_busy_cycles_total` | Total cycles where PMD was busy | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_pmd_idle_cycles_total` | Total idle cycles for PMD thread | `system_id`, `pmd_id`, `numa_id` |
+
+### RX/TX Batch Statistics
+
+| Metric | Description | Labels |
+|--------|-------------|--------|
+| `ovs_pmd_rx_batches_total` | Total number of RX batches processed | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_pmd_rx_packets_total` | Total number of RX packets processed | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_pmd_avg_rx_batch_size` | Average RX batch size | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_pmd_max_rx_batch_size` | Maximum RX batch size observed | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_pmd_tx_batches_total` | Total number of TX batches processed | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_pmd_tx_packets_total` | Total number of TX packets processed | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_pmd_avg_tx_batch_size` | Average TX batch size | `system_id`, `pmd_id`, `numa_id` |
+
+### Flow Lookup Statistics
+
+| Metric | Description | Labels |
+|--------|-------------|--------|
+| `ovs_pmd_exact_match_hit_total` | Number of exact match hits | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_pmd_masked_hit_total` | Number of masked hits | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_pmd_miss_total` | Number of flow misses | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_pmd_lost_total` | Number of lost packets | `system_id`, `pmd_id`, `numa_id` |
+
+### Suspicious Iteration Detection
+
+| Metric | Description | Labels |
+|--------|-------------|--------|
+| `ovs_pmd_suspicious_iterations_total` | Number of suspicious iterations detected | `system_id`, `pmd_id`, `numa_id` |
+| `ovs_pmd_suspicious_iterations_percent` | Percentage of iterations that are suspicious | `system_id`, `pmd_id`, `numa_id` |
 
 ### Upcall Metrics
 
@@ -35,24 +68,42 @@ The exporter automatically collects PMD performance metrics when running on DPDK
 
 ## Packet Drop Statistics
 
-The exporter already collects comprehensive packet drop statistics through the existing coverage metrics mechanism. These are automatically exposed as `ovs_coverage_total` metrics with the following event labels:
+The exporter collects comprehensive packet drop statistics through two mechanisms:
 
-### Datapath Drop Counters
-- `datapath_drop_upcall_error`
-- `datapath_drop_lock_error`
-- `datapath_drop_rx_invalid_packet`
-- `datapath_drop_meter`
-- `datapath_drop_userspace_action_error`
+### Individual Drop Counter Metrics
 
-### Pipeline Drop Counters
-- `drop_action_of_pipeline`
-- `drop_action_bridge_not_found`
+The exporter now exposes all 24 specific drop counters as individual metrics via `ovs_datapath_drops_total` with a `drop_reason` label:
 
-### Standard TX/RX Drop Counters
-- `ovs_tx_failure_drops`
-- `ovs_tx_mtu_exceeded_drops`
-- `ovs_tx_qos_drops`
-- `ovs_rx_qos_drops`
+| Drop Reason | Description |
+|-------------|-------------|
+| `datapath_drop_upcall_error` | Upcall error drops |
+| `datapath_drop_lock_error` | Lock contention drops |
+| `datapath_drop_rx_invalid_packet` | Invalid RX packet drops |
+| `datapath_drop_meter` | Meter-based drops |
+| `datapath_drop_userspace_action_error` | Userspace action errors |
+| `datapath_drop_tunnel_push_error` | Tunnel push errors |
+| `datapath_drop_tunnel_pop_error` | Tunnel pop errors |
+| `datapath_drop_recirc_error` | Recirculation errors |
+| `datapath_drop_invalid_port` | Invalid port drops |
+| `datapath_drop_invalid_tnl_port` | Invalid tunnel port drops |
+| `datapath_drop_sample_error` | Sampling errors |
+| `datapath_drop_nsh_decap_error` | NSH decapsulation errors |
+| `drop_action_of_pipeline` | OpenFlow pipeline drops |
+| `drop_action_bridge_not_found` | Bridge not found drops |
+| `drop_action_recursion_too_deep` | Recursion limit exceeded |
+| `drop_action_too_many_resubmit` | Too many resubmits |
+| `drop_action_stack_too_deep` | Stack overflow |
+| `drop_action_no_recirculation` | No recirculation available |
+| `drop_action_recirculation_conflict` | Recirculation conflicts |
+| `drop_action_too_many_mpls_labels` | MPLS label limit exceeded |
+| `drop_action_invalid_tunnel_metadata` | Invalid tunnel metadata |
+| `drop_action_unsupported_packet_type` | Unsupported packet type |
+| `drop_action_congestion` | Congestion drops |
+| `drop_action_forwarding_disabled` | Forwarding disabled |
+
+### Coverage-based Drop Statistics
+
+Additionally, all drop statistics are available through the existing coverage metrics mechanism as `ovs_coverage_total` metrics with event labels.
 
 ## Example Queries
 

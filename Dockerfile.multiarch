@@ -1,0 +1,47 @@
+FROM --platform=$BUILDPLATFORM golang:1.24 AS builder
+
+# Build arguments for cross-compilation
+ARG TARGETOS
+ARG TARGETARCH
+
+# Clone and build the exporter
+RUN git clone https://github.com/Liquescent-Development/ovs_exporter.git /build
+WORKDIR /build
+
+# Build for the target architecture
+RUN make BUILD_OS=${TARGETOS} BUILD_ARCH=${TARGETARCH}
+
+# Final stage - automatically uses the target platform
+FROM ubuntu:24.04
+
+# Avoid interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update, upgrade and install required packages including OVS client tools
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+    ca-certificates \
+    openvswitch-common \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the binary from builder - BuildKit automatically selects the right architecture
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+COPY --from=builder /build/bin/${TARGETOS}-${TARGETARCH}/ovs-exporter /usr/local/bin/ovs-exporter
+RUN chmod +x /usr/local/bin/ovs-exporter
+
+# Create a non-root user (though we'll run as root for OVS access)
+RUN useradd -r -s /bin/false ovs
+
+EXPOSE 9475
+
+USER root
+
+# Run OVS exporter with correct flag syntax (using single dash and dots)
+CMD ["/usr/local/bin/ovs-exporter", \
+     "-web.listen-address=:9475", \
+     "-web.telemetry-path=/metrics", \
+     "-system.run.dir=/var/run/openvswitch", \
+     "-database.vswitch.name=Open_vSwitch", \
+     "-database.vswitch.socket.remote=unix:/var/run/openvswitch/db.sock", \
+     "-database.vswitch.file.data.path=/etc/openvswitch/conf.db", \
+     "-log.level=info"]

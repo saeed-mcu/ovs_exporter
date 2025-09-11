@@ -381,6 +381,108 @@ var (
 		"Total cycles where PMD was busy.",
 		[]string{"system_id", "pmd_id", "numa_id"}, nil,
 	)
+	// Enhanced PMD Metrics
+	pmdCPUUtilization = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_cpu_utilization_percent"),
+		"CPU utilization percentage of PMD thread.",
+		[]string{"system_id", "pmd_id", "numa_id", "core_id"}, nil,
+	)
+	pmdIdleCycles = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_idle_cycles_total"),
+		"Total idle cycles for PMD thread.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	pmdSleepIterations = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_sleep_iterations_total"),
+		"Total sleep iterations for PMD thread.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	// RX Batch Statistics
+	pmdRxBatches = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_rx_batches_total"),
+		"Total number of RX batches processed.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	pmdRxPackets = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_rx_packets_total"),
+		"Total number of RX packets processed.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	pmdAvgRxBatchSize = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_avg_rx_batch_size"),
+		"Average RX batch size.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	pmdMaxRxBatchSize = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_max_rx_batch_size"),
+		"Maximum RX batch size observed.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	// TX Batch Statistics
+	pmdTxBatches = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_tx_batches_total"),
+		"Total number of TX batches processed.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	pmdTxPackets = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_tx_packets_total"),
+		"Total number of TX packets processed.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	pmdAvgTxBatchSize = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_avg_tx_batch_size"),
+		"Average TX batch size.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	// vHost Queue Metrics
+	pmdAvgVhostQueueLength = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_avg_vhost_queue_length"),
+		"Average vhost queue length.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	pmdVhostQueueFull = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_vhost_queue_full_total"),
+		"Number of times vhost queue was full.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	// Hit/Miss Statistics
+	pmdExactMatchHit = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_exact_match_hit_total"),
+		"Number of exact match hits.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	pmdMaskedHit = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_masked_hit_total"),
+		"Number of masked hits.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	pmdMiss = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_miss_total"),
+		"Number of misses.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	pmdLost = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_lost_total"),
+		"Number of lost packets.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	// Suspicious Iterations
+	pmdSuspiciousIterations = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_suspicious_iterations_total"),
+		"Number of suspicious iterations detected.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	pmdSuspiciousPercent = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_suspicious_iterations_percent"),
+		"Percentage of iterations that are suspicious.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	// Individual Drop Counters
+	datapathDrops = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "datapath_drops_total"),
+		"Specific datapath packet drop counters.",
+		[]string{"system_id", "drop_reason"}, nil,
+	)
 )
 
 // Exporter collects OVN data from the given server and exports them using
@@ -1361,123 +1463,7 @@ func (e *Exporter) GatherMetrics() {
 	))
 
 	// Collect PMD Performance Metrics (for DPDK deployments)
-	level.Debug(e.logger).Log(
-		"msg", "GatherMetrics() collecting PMD performance metrics",
-		"system_id", e.Client.System.ID,
-	)
-	
-	pmdMetrics, err := e.GetPmdPerfMetrics()
-	if err != nil {
-		level.Debug(e.logger).Log(
-			"msg", "PMD metrics collection skipped (likely non-DPDK deployment)",
-			"system_id", e.Client.System.ID,
-			"error", err.Error(),
-		)
-	} else if len(pmdMetrics) > 0 {
-		for _, pmd := range pmdMetrics {
-			// Add cycles per iteration
-			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
-				pmdCyclesPerIteration,
-				prometheus.GaugeValue,
-				pmd.CyclesPerIteration,
-				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
-			))
-			
-			// Add packets per iteration
-			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
-				pmdPacketsPerIteration,
-				prometheus.GaugeValue,
-				pmd.PacketsPerIteration,
-				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
-			))
-			
-			// Add cycles per packet
-			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
-				pmdCyclesPerPacket,
-				prometheus.GaugeValue,
-				pmd.CyclesPerPacket,
-				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
-			))
-			
-			// Add packets per batch
-			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
-				pmdPacketsPerBatch,
-				prometheus.GaugeValue,
-				pmd.PacketsPerBatch,
-				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
-			))
-			
-			// Add max vhost queue length
-			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
-				pmdMaxVhostQueueLength,
-				prometheus.GaugeValue,
-				float64(pmd.MaxVhostQueueLength),
-				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
-			))
-			
-			// Add upcalls
-			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
-				pmdUpcalls,
-				prometheus.CounterValue,
-				float64(pmd.Upcalls),
-				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
-			))
-			
-			// Add upcall cycles
-			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
-				pmdUpcallCycles,
-				prometheus.CounterValue,
-				float64(pmd.UpcallCycles),
-				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
-			))
-			
-			// Add vhost tx retries
-			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
-				vhostTxRetries,
-				prometheus.CounterValue,
-				float64(pmd.TxRetries),
-				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
-			))
-			
-			// Add vhost tx contention
-			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
-				vhostTxContention,
-				prometheus.CounterValue,
-				float64(pmd.TxContention),
-				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
-			))
-			
-			// Add vhost tx IRQs
-			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
-				vhostTxIrqs,
-				prometheus.CounterValue,
-				float64(pmd.TxIrqs),
-				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
-			))
-			
-			// Add iterations
-			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
-				pmdIterations,
-				prometheus.CounterValue,
-				float64(pmd.Iterations),
-				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
-			))
-			
-			// Add busy cycles
-			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
-				pmdBusyCycles,
-				prometheus.CounterValue,
-				float64(pmd.BusyCycles),
-				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
-			))
-		}
-		
-		level.Debug(e.logger).Log(
-			"msg", "PMD metrics collected successfully",
-			"system_id", e.Client.System.ID,
-			"pmd_count", len(pmdMetrics),
-		)
-	}
+	e.CollectPMDMetrics()
 
 	e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
 		nextPoll,
