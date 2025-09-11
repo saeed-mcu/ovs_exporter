@@ -1,8 +1,14 @@
 # Open Virtual Switch (OVS) Exporter
 
-<a href="https://github.com/greenpau/ovs_exporter/actions/" target="_blank"><img src="https://github.com/greenpau/ovs_exporter/workflows/build/badge.svg?branch=main"></a>
+<a href="https://github.com/Liquescent-Development/ovs_exporter/actions/" target="_blank"><img src="https://github.com/Liquescent-Development/ovs_exporter/workflows/build/badge.svg?branch=main"></a>
 
 Export Open Virtual Switch (OVS) data to Prometheus.
+
+> **Note**: This is an enhanced fork of the original [greenpau/ovs_exporter](https://github.com/greenpau/ovs_exporter) with significant improvements including:
+> - Updated to Go 1.24 with modernized dependencies
+> - Added comprehensive PMD/DPDK performance metrics
+> - Security updates and vulnerability fixes
+> - Enhanced monitoring capabilities as described in [Red Hat's OVS observability blog](https://www.redhat.com/en/blog/amazing-new-observability-features-open-vswitch)
 
 ## Introduction
 
@@ -16,12 +22,12 @@ This exporter exports metrics from the following OVS components:
 Run the following commands to install it:
 
 ```bash
-wget https://github.com/greenpau/ovs_exporter/releases/download/v1.0.4/ovs-exporter-1.0.4.linux-amd64.tar.gz
-tar xvzf ovs-exporter-1.0.4.linux-amd64.tar.gz
+wget https://github.com/Liquescent-Development/ovs_exporter/releases/download/v2.0.0/ovs-exporter-2.0.0.linux-amd64.tar.gz
+tar xvzf ovs-exporter-2.0.0.linux-amd64.tar.gz
 cd ovs-exporter*
 ./install.sh
 cd ..
-rm -rf ovs-exporter-1.0.4.linux-amd64*
+rm -rf ovs-exporter-2.0.0.linux-amd64*
 systemctl status ovs-exporter -l
 curl -s localhost:9475/metrics | grep server_id
 ```
@@ -30,15 +36,19 @@ Run the following commands to build and test it:
 
 ```bash
 cd $GOPATH/src
-mkdir -p github.com/greenpau
-cd github.com/greenpau
-git clone https://github.com/greenpau/ovs_exporter.git
+mkdir -p github.com/Liquescent-Development
+cd github.com/Liquescent-Development
+git clone https://github.com/Liquescent-Development/ovs_exporter.git
 cd ovs_exporter
 make
 make qtest
 ```
 
 ## Exported Metrics
+
+See [PMD_METRICS.md](PMD_METRICS.md) for comprehensive documentation of PMD/DPDK performance metrics.
+
+### Core Metrics
 
 | Metric | Meaning | Labels |
 | ------ | ------- | ------ |

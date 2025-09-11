@@ -17,6 +17,7 @@ package ovs_exporter
 import (
 	"fmt"
 	_ "net/http/pprof"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -25,7 +26,6 @@ import (
 	"github.com/go-kit/log/level"
 	"github.com/greenpau/ovsdb"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/common/promlog"
 	"github.com/prometheus/common/version"
 )
 
@@ -318,6 +318,69 @@ var (
 		"Represents the number of received multicast packets by OVS interface.",
 		[]string{"system_id", "uuid"}, nil,
 	)
+	// PMD Performance Metrics
+	pmdCyclesPerIteration = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_cycles_per_iteration"),
+		"Average cycles spent per PMD iteration.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	pmdPacketsPerIteration = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_packets_per_iteration"),
+		"Average packets processed per PMD iteration.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	pmdCyclesPerPacket = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_cycles_per_packet"),
+		"Average cycles spent per packet in PMD.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	pmdPacketsPerBatch = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_packets_per_batch"),
+		"Average packets per batch in PMD.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	pmdMaxVhostQueueLength = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_max_vhost_queue_length"),
+		"Maximum vhost queue length observed by PMD.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	pmdUpcalls = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_upcalls_total"),
+		"Total number of upcalls from PMD.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	pmdUpcallCycles = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_upcall_cycles_total"),
+		"Total cycles spent in upcalls from PMD.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	// vHost specific counters
+	vhostTxRetries = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "vhost_tx_retries_total"),
+		"Total number of vhost transmit retries.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	vhostTxContention = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "vhost_tx_contention_total"),
+		"Total number of vhost transmit contentions.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	vhostTxIrqs = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "vhost_tx_irqs_total"),
+		"Total number of vhost transmit IRQs.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	// PMD iteration and busy stats
+	pmdIterations = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_iterations_total"),
+		"Total number of PMD iterations.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
+	pmdBusyCycles = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "pmd_busy_cycles_total"),
+		"Total cycles where PMD was busy.",
+		[]string{"system_id", "pmd_id", "numa_id"}, nil,
+	)
 )
 
 // Exporter collects OVN data from the given server and exports them using
@@ -341,14 +404,25 @@ type Options struct {
 
 // NewLogger returns an instance of logger.
 func NewLogger(logLevel string) (log.Logger, error) {
-	allowedLogLevel := &promlog.AllowedLevel{}
-	if err := allowedLogLevel.Set(logLevel); err != nil {
-		return nil, err
+	logger := log.NewLogfmtLogger(os.Stderr)
+	logger = log.With(logger, "ts", log.DefaultTimestampUTC)
+	logger = log.With(logger, "caller", log.DefaultCaller)
+
+	var levelFilter level.Option
+	switch logLevel {
+	case "debug":
+		levelFilter = level.AllowDebug()
+	case "info":
+		levelFilter = level.AllowInfo()
+	case "warn":
+		levelFilter = level.AllowWarn()
+	case "error":
+		levelFilter = level.AllowError()
+	default:
+		return nil, fmt.Errorf("invalid log level: %s", logLevel)
 	}
-	promlogConfig := &promlog.Config{
-		Level: allowedLogLevel,
-	}
-	logger := promlog.New(promlogConfig)
+
+	logger = level.NewFilter(logger, levelFilter)
 	return logger, nil
 }
 
@@ -1286,6 +1360,125 @@ func (e *Exporter) GatherMetrics() {
 		e.Client.System.ID,
 	))
 
+	// Collect PMD Performance Metrics (for DPDK deployments)
+	level.Debug(e.logger).Log(
+		"msg", "GatherMetrics() collecting PMD performance metrics",
+		"system_id", e.Client.System.ID,
+	)
+	
+	pmdMetrics, err := e.GetPmdPerfMetrics()
+	if err != nil {
+		level.Debug(e.logger).Log(
+			"msg", "PMD metrics collection skipped (likely non-DPDK deployment)",
+			"system_id", e.Client.System.ID,
+			"error", err.Error(),
+		)
+	} else if len(pmdMetrics) > 0 {
+		for _, pmd := range pmdMetrics {
+			// Add cycles per iteration
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				pmdCyclesPerIteration,
+				prometheus.GaugeValue,
+				pmd.CyclesPerIteration,
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+			
+			// Add packets per iteration
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				pmdPacketsPerIteration,
+				prometheus.GaugeValue,
+				pmd.PacketsPerIteration,
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+			
+			// Add cycles per packet
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				pmdCyclesPerPacket,
+				prometheus.GaugeValue,
+				pmd.CyclesPerPacket,
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+			
+			// Add packets per batch
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				pmdPacketsPerBatch,
+				prometheus.GaugeValue,
+				pmd.PacketsPerBatch,
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+			
+			// Add max vhost queue length
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				pmdMaxVhostQueueLength,
+				prometheus.GaugeValue,
+				float64(pmd.MaxVhostQueueLength),
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+			
+			// Add upcalls
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				pmdUpcalls,
+				prometheus.CounterValue,
+				float64(pmd.Upcalls),
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+			
+			// Add upcall cycles
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				pmdUpcallCycles,
+				prometheus.CounterValue,
+				float64(pmd.UpcallCycles),
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+			
+			// Add vhost tx retries
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				vhostTxRetries,
+				prometheus.CounterValue,
+				float64(pmd.TxRetries),
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+			
+			// Add vhost tx contention
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				vhostTxContention,
+				prometheus.CounterValue,
+				float64(pmd.TxContention),
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+			
+			// Add vhost tx IRQs
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				vhostTxIrqs,
+				prometheus.CounterValue,
+				float64(pmd.TxIrqs),
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+			
+			// Add iterations
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				pmdIterations,
+				prometheus.CounterValue,
+				float64(pmd.Iterations),
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+			
+			// Add busy cycles
+			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+				pmdBusyCycles,
+				prometheus.CounterValue,
+				float64(pmd.BusyCycles),
+				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
+			))
+		}
+		
+		level.Debug(e.logger).Log(
+			"msg", "PMD metrics collected successfully",
+			"system_id", e.Client.System.ID,
+			"pmd_count", len(pmdMetrics),
+		)
+	}
+
 	e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
 		nextPoll,
 		prometheus.CounterValue,
@@ -1304,7 +1497,17 @@ func (e *Exporter) GatherMetrics() {
 }
 
 func init() {
-	prometheus.MustRegister(version.NewCollector(namespace + "_exporter"))
+	// Register version info as a metric
+	versionInfo := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: namespace + "_exporter",
+			Name:      "build_info",
+			Help:      "A metric with a constant '1' value labeled by version, revision, branch, and goversion from which the exporter was built.",
+		},
+		[]string{"version", "revision", "branch", "goversion"},
+	)
+	prometheus.MustRegister(versionInfo)
+	versionInfo.WithLabelValues(version.Version, version.Revision, version.Branch, version.GoVersion).Set(1)
 }
 
 // GetVersionInfo returns exporter info.

@@ -15,7 +15,7 @@
 package ovs_exporter
 
 import (
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -106,7 +106,7 @@ func TestNewExporter(t *testing.T) {
 	}
 	defer res.Body.Close()
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		t.Fatalf("non-EOF error: %s", err)
 	}
