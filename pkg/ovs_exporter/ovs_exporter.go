@@ -62,12 +62,12 @@ var (
 		}, nil,
 	)
 	requestErrors = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "failed_req_count"),
+		prometheus.BuildFQName(namespace, "", "failed_requests_total"),
 		"The number of failed requests to OVN stack.",
 		[]string{"system_id"}, nil,
 	)
 	nextPoll = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "next_poll"),
+		prometheus.BuildFQName(namespace, "", "next_poll_timestamp_seconds"),
 		"The timestamp of the next potential poll of OVN stack.",
 		[]string{"system_id"}, nil,
 	)
@@ -77,23 +77,23 @@ var (
 		[]string{"system_id", "component", "user", "group"}, nil,
 	)
 	logFileSize = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "log_file_size"),
+		prometheus.BuildFQName(namespace, "", "log_file_size_bytes"),
 		"The size of a log file associated with an OVN component.",
 		[]string{"system_id", "component", "filename"}, nil,
 	)
 	logEventStat = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "log_event_count"),
-		"The number of recorded log meessage associated with an OVN component by log severity level and source.",
+		prometheus.BuildFQName(namespace, "", "log_events"),
+		"The number of recorded log messages associated with an OVN component by log severity level and source.",
 		[]string{"system_id", "component", "severity", "source"}, nil,
 	)
 	dbFileSize = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "db_file_size"),
+		prometheus.BuildFQName(namespace, "", "db_file_size_bytes"),
 		"The size of a database file associated with an OVN component.",
 		[]string{"system_id", "component", "filename"}, nil,
 	)
 	networkPortUp = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "network_port"),
-		"The TCP port used for database connection. If the value is 0, then the port is not in use.",
+		prometheus.BuildFQName(namespace, "", "network_port_up"),
+		"Whether the network port is up (1) or down (0) for database connection.",
 		[]string{"system_id", "component", "usage"}, nil,
 	)
 	// OVS Coverage and Memory
@@ -108,19 +108,19 @@ var (
 		[]string{"system_id", "component", "event"}, nil,
 	)
 	memUsage = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "memory_usage"),
-		"The memory usage.",
+		prometheus.BuildFQName(namespace, "", "memory_usage_bytes"),
+		"The memory usage in bytes.",
 		[]string{"system_id", "component", "facility"}, nil,
 	)
 	// OVS Datapath
 	dpInterface = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "dp_if"),
+		prometheus.BuildFQName(namespace, "", "dp_interface"),
 		"Represents an existing datapath interface. This metrics is always 1.",
 		[]string{"system_id", "datapath", "bridge", "name", "ofport", "index", "port_type"}, nil,
 	)
 	dpBridgeInterfaceTotal = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "dp_br_if_total"),
-		"The total number of interfaces attached to a bridge.",
+		prometheus.BuildFQName(namespace, "", "dp_bridge_interfaces"),
+		"The number of interfaces attached to a bridge.",
 		[]string{"system_id", "datapath", "bridge"}, nil,
 	)
 	dpFlowsTotal = prometheus.NewDesc(
@@ -130,23 +130,23 @@ var (
 	)
 	// OVS Datapath: Lookups
 	dpLookupsHit = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "dp_lookups_hit"),
+		prometheus.BuildFQName(namespace, "", "dp_lookups_hit_total"),
 		"The number of incoming packets in a datapath matching existing flows in the datapath.",
 		[]string{"system_id", "datapath"}, nil,
 	)
 	dpLookupsMissed = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "dp_lookups_missed"),
+		prometheus.BuildFQName(namespace, "", "dp_lookups_missed_total"),
 		"The number of incoming packets in a datapath not matching any existing flow in the datapath.",
 		[]string{"system_id", "datapath"}, nil,
 	)
 	dpLookupsLost = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "dp_lookups_lost"),
+		prometheus.BuildFQName(namespace, "", "dp_lookups_lost_total"),
 		"Returns the number of incoming packets in a datapath destined for userspace process but subsequently dropped before reaching userspace.",
 		[]string{"system_id", "datapath"}, nil,
 	)
 	// OVS Datapath: Masks
 	dpMasksHit = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "dp_masks_hit"),
+		prometheus.BuildFQName(namespace, "", "dp_masks_hit_total"),
 		"The total number of masks visited for matching incoming packets.",
 		[]string{"system_id", "datapath"}, nil,
 	)
@@ -178,13 +178,13 @@ var (
 		[]string{"system_id", "uuid"}, nil,
 	)
 	interfaceIngressPolicingBurst = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_ingress_policing_burst"),
-		"Maximum burst size for data received on OVS interface, in kb. The default burst size if set to 0 is 8000 kbit.",
+		prometheus.BuildFQName(namespace, "", "interface_ingress_policing_burst_kilobits"),
+		"Maximum burst size for data received on OVS interface, in kilobits. The default burst size if set to 0 is 8000 kbit.",
 		[]string{"system_id", "uuid"}, nil,
 	)
 	interfaceIngressPolicingRate = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_ingress_policing_rate"),
-		"Maximum rate for data received on OVS interface, in kbps. If the value is 0, then policing is disabled.",
+		prometheus.BuildFQName(namespace, "", "interface_ingress_policing_rate_kilobits_per_second"),
+		"Maximum rate for data received on OVS interface, in kilobits per second. If the value is 0, then policing is disabled.",
 		[]string{"system_id", "uuid"}, nil,
 	)
 	interfaceMacInUse = prometheus.NewDesc(
@@ -193,8 +193,8 @@ var (
 		[]string{"system_id", "uuid", "mac_address"}, nil,
 	)
 	interfaceMtu = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_mtu"),
-		"The currently configured MTU for OVS interface.",
+		prometheus.BuildFQName(namespace, "", "interface_mtu_bytes"),
+		"The currently configured MTU for OVS interface in bytes.",
 		[]string{"system_id", "uuid"}, nil,
 	)
 	interfaceDuplex = prometheus.NewDesc(
@@ -203,12 +203,12 @@ var (
 		[]string{"system_id", "uuid"}, nil,
 	)
 	interfaceOfPort = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_of_port"),
+		prometheus.BuildFQName(namespace, "", "interface_openflow_port"),
 		"Represents the OpenFlow port ID associated with OVS interface.",
 		[]string{"system_id", "uuid"}, nil,
 	)
 	interfaceIfIndex = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_if_index"),
+		prometheus.BuildFQName(namespace, "", "interface_index"),
 		"Represents the interface index associated with OVS interface.",
 		[]string{"system_id", "uuid"}, nil,
 	)
@@ -220,38 +220,38 @@ var (
 	// OVS Interface Statistics: Receive errors
 	// See http://www.openvswitch.org/support/dist-docs/ovs-vswitchd.conf.db.5.html
 	interfaceStatRxCrcError = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_rx_crc_err"),
+		prometheus.BuildFQName(namespace, "", "interface_rx_crc_errors_total"),
 		"Represents the number of CRC errors for the packets received by OVS interface.",
 		[]string{"system_id", "uuid"}, nil,
 	)
 	interfaceStatRxDropped = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_rx_dropped"),
+		prometheus.BuildFQName(namespace, "", "interface_rx_dropped_total"),
 		"Represents the number of input packets dropped by OVS interface.",
 		[]string{"system_id", "uuid"}, nil,
 	)
 	interfaceStatRxFrameError = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_rx_frame_err"),
+		prometheus.BuildFQName(namespace, "", "interface_rx_frame_errors_total"),
 		"Represents the number of frame alignment errors on the packets received by OVS interface.",
 		[]string{"system_id", "uuid"}, nil,
 	)
 	interfaceStatRxOverrunError = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_rx_over_err"),
+		prometheus.BuildFQName(namespace, "", "interface_rx_overrun_errors_total"),
 		"Represents the number of packets with RX overrun received by OVS interface.",
 		[]string{"system_id", "uuid"}, nil,
 	)
 	interfaceStatRxErrorsTotal = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_rx_errors"),
+		prometheus.BuildFQName(namespace, "", "interface_rx_errors_total"),
 		"Represents the total number of packets with errors received by OVS interface.",
 		[]string{"system_id", "uuid"}, nil,
 	)
 	interfaceStatRxMissedErrors = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_rx_missed_errors"),
+		prometheus.BuildFQName(namespace, "", "interface_rx_missed_errors_total"),
 		"Represents the number of missed packets received by OVS interface.",
 		[]string{"system_id", "uuid"}, nil,
 	)
 	// OVS Interface Statistics: Successful transmit and receive counters
 	interfaceStatRxPackets = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_rx_packets"),
+		prometheus.BuildFQName(namespace, "", "interface_rx_packets_total"),
 		"Represents the number of received packets by OVS interface.",
 		[]string{"system_id", "uuid"}, nil,
 	)
@@ -261,7 +261,7 @@ var (
 		[]string{"system_id", "uuid"}, nil,
 	)
 	interfaceStatTxPackets = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_tx_packets"),
+		prometheus.BuildFQName(namespace, "", "interface_tx_packets_total"),
 		"Represents the number of transmitted packets by OVS interface.",
 		[]string{"system_id", "uuid"}, nil,
 	)
@@ -272,29 +272,29 @@ var (
 	)
 	// OVS Interface Statistics: Transmit errors
 	interfaceStatTxDropped = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_tx_dropped"),
+		prometheus.BuildFQName(namespace, "", "interface_tx_dropped_total"),
 		"Represents the number of output packets dropped by OVS interface.",
 		[]string{"system_id", "uuid"}, nil,
 	)
 	interfaceStatTxErrorsTotal = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_tx_errors"),
+		prometheus.BuildFQName(namespace, "", "interface_tx_errors_total"),
 		"Represents the total number of transmit errors by OVS interface.",
 		[]string{"system_id", "uuid"}, nil,
 	)
 	interfaceStatCollisions = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_collisions"),
+		prometheus.BuildFQName(namespace, "", "interface_collisions_total"),
 		"Represents the number of collisions on OVS interface.",
 		[]string{"system_id", "uuid"}, nil,
 	)
 	// OVS Link attributes, e.g. speed, resets, etc.
 	interfaceLinkResets = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_link_resets"),
+		prometheus.BuildFQName(namespace, "", "interface_link_resets_total"),
 		"The number of times Open vSwitch has observed the link_state of OVS interface change.",
 		[]string{"system_id", "uuid"}, nil,
 	)
 	interfaceLinkSpeed = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_link_speed"),
-		"The negotiated speed of the physical network link of OVS interface.",
+		prometheus.BuildFQName(namespace, "", "interface_link_speed_bits_per_second"),
+		"The negotiated speed of the physical network link of OVS interface in bits per second.",
 		[]string{"system_id", "uuid"}, nil,
 	)
 	// Interface Status, Options, and External IDs Key-Value Pairs
@@ -314,7 +314,7 @@ var (
 		[]string{"system_id", "uuid", "key", "value"}, nil,
 	)
 	interfaceStateMulticastPackets = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "interface_rx_multicast_packets"),
+		prometheus.BuildFQName(namespace, "", "interface_rx_multicast_packets_total"),
 		"Represents the number of received multicast packets by OVS interface.",
 		[]string{"system_id", "uuid"}, nil,
 	)
@@ -383,8 +383,8 @@ var (
 	)
 	// Enhanced PMD Metrics
 	pmdCPUUtilization = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "pmd_cpu_utilization_percent"),
-		"CPU utilization percentage of PMD thread.",
+		prometheus.BuildFQName(namespace, "", "pmd_cpu_utilization_ratio"),
+		"CPU utilization ratio of PMD thread (0-1).",
 		[]string{"system_id", "pmd_id", "numa_id", "core_id"}, nil,
 	)
 	pmdIdleCycles = prometheus.NewDesc(
@@ -473,8 +473,8 @@ var (
 		[]string{"system_id", "pmd_id", "numa_id"}, nil,
 	)
 	pmdSuspiciousPercent = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "pmd_suspicious_iterations_percent"),
-		"Percentage of iterations that are suspicious.",
+		prometheus.BuildFQName(namespace, "", "pmd_suspicious_iterations_ratio"),
+		"Ratio of iterations that are suspicious (0-1).",
 		[]string{"system_id", "pmd_id", "numa_id"}, nil,
 	)
 	// Individual Drop Counters
@@ -485,8 +485,8 @@ var (
 	)
 	// Flow Cache Performance Metrics
 	emcHitRate = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "flow_cache_emc_hit_rate"),
-		"Exact Match Cache (EMC) hit rate percentage.",
+		prometheus.BuildFQName(namespace, "", "flow_cache_emc_hit_ratio"),
+		"Exact Match Cache (EMC) hit ratio (0-1).",
 		[]string{"system_id", "pmd_id", "numa_id"}, nil,
 	)
 	emcHits = prometheus.NewDesc(
@@ -500,8 +500,8 @@ var (
 		[]string{"system_id", "pmd_id", "numa_id"}, nil,
 	)
 	smcHitRate = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "flow_cache_smc_hit_rate"),
-		"Signature Match Cache (SMC) hit rate percentage.",
+		prometheus.BuildFQName(namespace, "", "flow_cache_smc_hit_ratio"),
+		"Signature Match Cache (SMC) hit ratio (0-1).",
 		[]string{"system_id", "pmd_id", "numa_id"}, nil,
 	)
 	smcHits = prometheus.NewDesc(
@@ -510,8 +510,8 @@ var (
 		[]string{"system_id", "pmd_id", "numa_id"}, nil,
 	)
 	megaflowHitRate = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "flow_cache_megaflow_hit_rate"),
-		"Megaflow cache hit rate percentage.",
+		prometheus.BuildFQName(namespace, "", "flow_cache_megaflow_hit_ratio"),
+		"Megaflow cache hit ratio (0-1).",
 		[]string{"system_id", "pmd_id", "numa_id"}, nil,
 	)
 	megaflowHits = prometheus.NewDesc(
@@ -763,7 +763,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		)
 		ch <- prometheus.MustNewConstMetric(
 			nextPoll,
-			prometheus.CounterValue,
+			prometheus.GaugeValue,
 			float64(e.nextCollectionTicker),
 			e.Client.System.ID,
 		)
@@ -1556,7 +1556,7 @@ func (e *Exporter) GatherMetrics() {
 
 	e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
 		nextPoll,
-		prometheus.CounterValue,
+		prometheus.GaugeValue,
 		float64(e.nextCollectionTicker),
 		e.Client.System.ID,
 	))
@@ -1567,8 +1567,6 @@ func (e *Exporter) GatherMetrics() {
 		"msg", "GatherMetrics() returns",
 		"system_id", e.Client.System.ID,
 	)
-
-	return
 }
 
 func init() {

@@ -48,11 +48,11 @@ func (e *Exporter) CollectPMDMetrics() {
 	}
 	
 	for _, pmd := range enhancedMetrics {
-		// CPU Utilization
+		// CPU Utilization (convert from percentage to ratio)
 		e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
 			pmdCPUUtilization,
 			prometheus.GaugeValue,
-			pmd.CPUUtilization,
+			pmd.CPUUtilization / 100.0, // Convert percentage to ratio (0-1)
 			e.Client.System.ID, pmd.PmdID, pmd.NumaID, pmd.CoreID,
 		))
 		
@@ -262,11 +262,11 @@ func (e *Exporter) CollectPMDMetrics() {
 				float64(pmd.SuspiciousIterations),
 				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
 			))
-			
+
 			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
 				pmdSuspiciousPercent,
 				prometheus.GaugeValue,
-				pmd.SuspiciousPercent,
+				pmd.SuspiciousPercent / 100.0, // Convert percentage to ratio (0-1)
 				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
 			))
 		}
@@ -276,7 +276,7 @@ func (e *Exporter) CollectPMDMetrics() {
 			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
 				emcHitRate,
 				prometheus.GaugeValue,
-				pmd.EMCHitRate,
+				pmd.EMCHitRate / 100.0, // Convert percentage to ratio (0-1)
 				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
 			))
 			
@@ -299,7 +299,7 @@ func (e *Exporter) CollectPMDMetrics() {
 			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
 				smcHitRate,
 				prometheus.GaugeValue,
-				pmd.SMCHitRate,
+				pmd.SMCHitRate / 100.0, // Convert percentage to ratio (0-1)
 				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
 			))
 			
@@ -315,7 +315,7 @@ func (e *Exporter) CollectPMDMetrics() {
 			e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
 				megaflowHitRate,
 				prometheus.GaugeValue,
-				pmd.MegaflowHitRate,
+				pmd.MegaflowHitRate / 100.0, // Convert percentage to ratio (0-1)
 				e.Client.System.ID, pmd.PmdID, pmd.NumaID,
 			))
 			
