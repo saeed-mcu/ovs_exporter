@@ -592,7 +592,16 @@ func NewExporter(opts Options) *Exporter {
 }
 
 func (e *Exporter) Connect() error {
-	e.Client.GetSystemID()
+	// Try to get system ID from database first, then fallback to file
+	if err := e.GetSystemID(); err != nil {
+		// Log the error but continue - we'll use "unknown" as system ID
+		level.Warn(e.logger).Log(
+			"msg", "Failed to retrieve system ID, using 'unknown'",
+			"error", err,
+		)
+		// The client already has "unknown" as default, so we can continue
+	}
+
 	level.Debug(e.logger).Log(
 		"msg", "NewExporter() calls Connect()",
 		"system_id", e.Client.System.ID,
