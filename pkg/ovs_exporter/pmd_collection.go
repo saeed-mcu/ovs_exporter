@@ -27,6 +27,7 @@ func (e *Exporter) CollectPMDMetrics() {
 	)
 	
 	// Collect enhanced PMD metrics
+	e.IncrementRequestCounter()
 	enhancedMetrics, err := e.GetEnhancedPmdMetrics()
 	if err != nil {
 		level.Debug(e.logger).Log(
@@ -356,6 +357,7 @@ func (e *Exporter) CollectPMDMetrics() {
 
 // collectBasicPMDMetrics falls back to basic PMD metrics collection
 func (e *Exporter) collectBasicPMDMetrics() {
+	e.IncrementRequestCounter()
 	pmdMetrics, err := e.GetPmdPerfMetrics()
 	if err != nil || len(pmdMetrics) == 0 {
 		return
@@ -451,6 +453,7 @@ func (e *Exporter) collectBasicPMDMetrics() {
 
 // collectDropCounters collects specific drop counter metrics
 func (e *Exporter) collectDropCounters() {
+	e.IncrementRequestCounter()
 	dropCounters, err := e.GetDropCounters()
 	if err != nil {
 		level.Debug(e.logger).Log(

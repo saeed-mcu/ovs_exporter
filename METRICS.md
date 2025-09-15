@@ -22,6 +22,7 @@ This document provides a comprehensive reference for all metrics exported by the
 |--------|------|-------------|--------|
 | `ovs_up` | Gauge | Is OVN stack up (1) or is it down (0) | - |
 | `ovs_info` | Gauge | Basic information about OVN stack. Always set to 1 | `system_id`, `rundir`, `hostname`, `system_type`, `system_version`, `ovs_version`, `db_version` |
+| `ovs_requests_total` | Counter | The total number of requests to OVN stack | `system_id` |
 | `ovs_failed_requests_total` | Counter | The number of failed requests to OVN stack | `system_id` |
 | `ovs_next_poll_timestamp_seconds` | Gauge | The timestamp of the next potential poll of OVN stack | `system_id` |
 | `ovs_exporter_build_info` | Gauge | Build information about the exporter itself | `version`, `revision`, `branch`, `goversion` |
@@ -290,7 +291,10 @@ Note: Drop statistics are also available through coverage metrics (`ovs_coverage
 # Check if OVS is up
 ovs_up
 
-# Monitor failed requests
+# Monitor request success rate
+(1 - (rate(ovs_failed_requests_total[5m]) / rate(ovs_requests_total[5m]))) * 100
+
+# Monitor failed request rate
 rate(ovs_failed_requests_total[5m])
 ```
 

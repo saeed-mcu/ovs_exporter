@@ -177,7 +177,7 @@
             "uid": "${datasource}"
           },
           "editorMode": "code",
-          "expr": "(1 - (rate(ovs_failed_requests_total{system_id=\"$system_id\"}[5m]) / (rate(ovs_failed_requests_total{system_id=\"$system_id\"}[5m]) + 1))) * 100",
+          "expr": "(1 - (rate(ovs_failed_requests_total{system_id=\"$system_id\"}[5m]) / rate(ovs_requests_total{system_id=\"$system_id\"}[5m]))) * 100",
           "legendFormat": "Success Rate",
           "range": true,
           "refId": "A"

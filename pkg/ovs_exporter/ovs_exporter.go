@@ -66,6 +66,11 @@ var (
 		"The number of failed requests to OVN stack.",
 		[]string{"system_id"}, nil,
 	)
+	requestsTotal = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "requests_total"),
+		"The total number of requests to OVN stack.",
+		[]string{"system_id"}, nil,
+	)
 	nextPoll = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "next_poll_timestamp_seconds"),
 		"The timestamp of the next potential poll of OVN stack.",
@@ -539,6 +544,7 @@ type Exporter struct {
 	timeout              int
 	pollInterval         int64
 	errors               int64
+	totalRequests        int64
 	errorsLocker         sync.RWMutex
 	nextCollectionTicker int64
 	metrics              []prometheus.Metric
@@ -633,6 +639,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- up
 	ch <- info
 	ch <- requestErrors
+	ch <- requestsTotal
 	ch <- nextPoll
 	ch <- pid
 	ch <- logFileSize
@@ -734,6 +741,14 @@ func (e *Exporter) IncrementErrorCounter() {
 	atomic.AddInt64(&e.errors, 1)
 }
 
+// IncrementRequestCounter increases the counter of total requests
+// to OVN server.
+func (e *Exporter) IncrementRequestCounter() {
+	e.errorsLocker.Lock()
+	defer e.errorsLocker.Unlock()
+	atomic.AddInt64(&e.totalRequests, 1)
+}
+
 // Collect implements prometheus.Collector.
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	e.GatherMetrics()
@@ -768,6 +783,12 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 			requestErrors,
 			prometheus.CounterValue,
 			float64(e.errors),
+			e.Client.System.ID,
+		)
+		ch <- prometheus.MustNewConstMetric(
+			requestsTotal,
+			prometheus.CounterValue,
+			float64(e.totalRequests),
 			e.Client.System.ID,
 		)
 		ch <- prometheus.MustNewConstMetric(
@@ -885,6 +906,7 @@ func (e *Exporter) GatherMetrics() {
 			"system_id", e.Client.System.ID,
 		)
 
+		e.IncrementRequestCounter()
 		file, err := e.Client.GetLogFileInfo(component)
 		if err != nil {
 			level.Error(e.logger).Log(
@@ -1557,6 +1579,13 @@ func (e *Exporter) GatherMetrics() {
 		requestErrors,
 		prometheus.CounterValue,
 		float64(e.errors),
+		e.Client.System.ID,
+	))
+
+	e.metrics = append(e.metrics, prometheus.MustNewConstMetric(
+		requestsTotal,
+		prometheus.CounterValue,
+		float64(e.totalRequests),
 		e.Client.System.ID,
 	))
 
