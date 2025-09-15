@@ -46,12 +46,12 @@ Download the latest release for your architecture:
 
 ```bash
 # Linux AMD64
-wget https://github.com/Liquescent-Development/ovs_exporter/releases/download/v2.3.0/ovs-exporter-2.3.0.linux-amd64.tar.gz
-tar xvzf ovs-exporter-2.3.0.linux-amd64.tar.gz
+wget https://github.com/Liquescent-Development/ovs_exporter/releases/download/v2.3.1/ovs-exporter-2.3.1.linux-amd64.tar.gz
+tar xvzf ovs-exporter-2.3.1.linux-amd64.tar.gz
 
 # Linux ARM64
-wget https://github.com/Liquescent-Development/ovs_exporter/releases/download/v2.3.0/ovs-exporter-2.3.0.linux-arm64.tar.gz
-tar xvzf ovs-exporter-2.3.0.linux-arm64.tar.gz
+wget https://github.com/Liquescent-Development/ovs_exporter/releases/download/v2.3.1/ovs-exporter-2.3.1.linux-arm64.tar.gz
+tar xvzf ovs-exporter-2.3.1.linux-arm64.tar.gz
 ```
 
 Install as a systemd service:
@@ -152,7 +152,7 @@ See [METRICS.md](METRICS.md) for complete documentation of all metrics.
 
 ### Metric Categories
 
-- **System Metrics**: Overall health, version info, failed requests
+- **System Metrics**: Overall health, version info, total requests, failed requests
 - **Process Metrics**: Component PIDs, file sizes, log events
 - **Datapath Metrics**: Flows, lookups, masks, interfaces
 - **Interface Metrics**: Traffic statistics, errors, configuration
@@ -166,6 +166,8 @@ See [METRICS.md](METRICS.md) for complete documentation of all metrics.
 # System health
 ovs_up{system_id="uuid"} 1
 ovs_info{system_id="uuid", hostname="host1", ovs_version="2.17.0"} 1
+ovs_requests_total{system_id="uuid"} 12345
+ovs_failed_requests_total{system_id="uuid"} 2
 
 # Interface traffic (with Prometheus naming conventions)
 ovs_interface_rx_packets_total{uuid="123", name="eth0"}
@@ -422,14 +424,14 @@ make coverage
 ### Release Process
 ```bash
 # 1. Update VERSION file
-echo "2.3.0" > VERSION
+echo "2.3.1" > VERSION
 
 # 2. Build release artifacts
 make dist
 
 # 3. Create git tag
-git tag -a v2.3.0 -m "Release v2.3.0"
-git push origin v2.3.0
+git tag -a v2.3.1 -m "Release v2.3.1"
+git push origin v2.3.1
 
 # 4. Upload to GitHub releases
 # Use GitHub UI or gh CLI
