@@ -63,10 +63,33 @@ systemctl status ovs-exporter
 ```
 
 The install script will:
+- Automatically detect system architecture (amd64/arm64)
+- Build the binary if not present (requires Go and Make)
 - Create an `ovs_exporter` user and group
 - Install the binary to `/usr/sbin/ovs-exporter`
 - Set up systemd service with proper capabilities
 - Configure permissions for OVS socket access
+- Optionally configure remote syslog forwarding
+
+#### Remote Syslog Configuration
+
+The install script supports forwarding logs to a remote syslog server:
+
+```bash
+# Forward logs via UDP (default)
+sudo ./install.sh --syslog-server 192.168.1.100
+
+# Forward logs via TCP with custom port
+sudo ./install.sh --syslog-server syslog.example.com --syslog-port 6514 --syslog-protocol tcp
+
+# View all options
+sudo ./install.sh --help
+```
+
+Remote syslog options:
+- `--syslog-server HOST` - Remote syslog server hostname or IP address
+- `--syslog-port PORT` - Remote syslog server port (default: 514)
+- `--syslog-protocol PROTO` - Protocol to use: udp or tcp (default: udp)
 
 Verify the installation:
 
@@ -87,12 +110,20 @@ Requirements:
 ```bash
 git clone https://github.com/Liquescent-Development/ovs_exporter.git
 cd ovs_exporter
+
+# Build for current architecture (auto-detected)
 make
+
+# Build for specific architecture
+make BUILD_OS="linux" BUILD_ARCH="arm64"
 
 # Run quick test (requires sudo)
 make qtest
 
-# Install locally
+# Install using the install script (recommended)
+sudo ./install.sh
+
+# Or install manually via make
 sudo make deploy
 ```
 

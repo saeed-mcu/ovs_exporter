@@ -8,3 +8,6 @@ ovs_exporter.test
 bin/
 dist/
 TODO
+CLAUDE.md
+.vscode
+ovs_exporter
