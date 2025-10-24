@@ -623,7 +623,11 @@ func (e *Exporter) Connect() error {
 	)
 
 	if err := e.Client.GetSystemInfo(); err != nil {
-		return err
+		level.Warn(e.logger).Log(
+			"msg", "Error occured during GetSystemInfo()",
+			"error", err.Error(),
+			"system_id", e.Client.System.ID,
+		)
 	}
 
 	level.Debug(e.logger).Log(
@@ -841,7 +845,7 @@ func (e *Exporter) GatherMetrics() {
 
 	err = e.Client.GetSystemInfo()
 	if err != nil {
-		level.Error(e.logger).Log(
+		level.Warn(e.logger).Log(
 			"msg", "GetSystemInfo() failed",
 			"vswitch_name", e.Client.Database.Vswitch.Name,
 			"system_id", e.Client.System.ID,
