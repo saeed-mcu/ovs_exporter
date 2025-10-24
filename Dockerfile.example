@@ -25,12 +25,22 @@ EXPOSE 9475
 
 USER root
 
-# Run OVS exporter with correct flag syntax (using single dash and dots)
-CMD ["/usr/local/bin/ovs-exporter", \
-     "-web.listen-address=:9475", \
-     "-web.telemetry-path=/metrics", \
-     "-system.run.dir=/var/run/openvswitch", \
-     "-database.vswitch.name=Open_vSwitch", \
-     "-database.vswitch.socket.remote=unix:/var/run/openvswitch/db.sock", \
-     "-database.vswitch.file.data.path=/etc/openvswitch/conf.db", \
-     "-log.level=info"]
+# Define default environment variables (can be overridden at runtime)
+ENV LISTEN_ADDRESS=:9475 \
+    TELEMETRY_PATH=/metrics \
+    RUN_DIR=/var/run/openvswitch \
+    DB_NAME=Open_vSwitch \
+    DB_SOCKET=unix:/var/run/openvswitch/db.sock \
+    DB_FILE_PATH=/etc/openvswitch/conf.db \
+    LOG_LEVEL=info
+
+# Use a shell to expand environment variables
+ENTRYPOINT ["/bin/sh", "-c"]
+CMD ["/usr/local/bin/ovs-exporter \
+     -web.listen-address=${LISTEN_ADDRESS} \
+     -web.telemetry-path=${TELEMETRY_PATH} \
+     -system.run.dir=${RUN_DIR} \
+     -database.vswitch.name=${DB_NAME} \
+     -database.vswitch.socket.remote=${DB_SOCKET} \
+     -database.vswitch.file.data.path=${DB_FILE_PATH} \
+     -log.level=${LOG_LEVEL}"]
